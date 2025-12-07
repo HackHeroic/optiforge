@@ -192,9 +192,7 @@ def render_navbar(dark=False):
         }}
     </style>
 
-    <div class="custom-nav">
-        <a class="nav-link" href="https://github.com/HackHeroic/optiforge" target="_blank">GitHub</a>
-    </div>
+
 
     <div class="nav-spacer"></div>
     """, unsafe_allow_html=True)
