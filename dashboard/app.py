@@ -482,6 +482,39 @@ SCALING_PARAMS = {
     }
 }
 
+# Custom LSTM layer that ignores unsupported parameters
+def get_custom_objects():
+    """Return custom objects for loading models with compatibility issues"""
+    from tensorflow.keras.layers import LSTM
+    import tensorflow as tf
+    
+    class CompatibleLSTM(LSTM):
+        """LSTM layer that ignores time_major parameter for backward compatibility"""
+        def __init__(self, *args, **kwargs):
+            # Remove time_major if present (not supported in newer TF versions)
+            kwargs.pop('time_major', None)
+            super().__init__(*args, **kwargs)
+        
+        @classmethod
+        def from_config(cls, config):
+            # Remove time_major from config during deserialization
+            if isinstance(config, dict):
+                config = config.copy()
+                config.pop('time_major', None)
+            return super().from_config(config)
+        
+        def get_config(self):
+            # Ensure time_major is not in saved config
+            config = super().get_config()
+            config.pop('time_major', None)
+            return config
+    
+    # Register the custom class globally for deserialization
+    custom_objects_dict = tf.keras.utils.get_custom_objects()
+    custom_objects_dict['LSTM'] = CompatibleLSTM
+    
+    return {'LSTM': CompatibleLSTM}
+
 # Cache models to avoid reloading
 @st.cache_resource
 def load_model_cached(model_path):
@@ -490,8 +523,30 @@ def load_model_cached(model_path):
     if not os.path.exists(full_path):
         st.warning(f"Model file not found: {full_path}")
         return None
+    
+    # Get custom objects to handle LSTM compatibility
+    custom_objects = get_custom_objects()
+    
     try:
-        return load_model(full_path, compile=False)
+        # Try loading with custom objects to handle time_major issue
+        return load_model(full_path, compile=False, custom_objects=custom_objects)
+    except (TypeError, ValueError) as e:
+        # If error occurs (likely due to time_major or other compatibility issues)
+        error_msg = str(e).lower()
+        if 'time_major' in error_msg or 'unrecognized keyword' in error_msg:
+            # Try loading without custom objects for non-LSTM models
+            if 'lstm' not in model_path.lower():
+                try:
+                    return load_model(full_path, compile=False)
+                except Exception as e2:
+                    st.error(f"Error loading model {model_path}: {str(e2)}")
+                    return None
+            else:
+                st.error(f"Error loading LSTM model {model_path}: {str(e)}. This may be due to TensorFlow version compatibility with the 'time_major' parameter.")
+                return None
+        else:
+            st.error(f"Error loading model {model_path}: {str(e)}")
+            return None
     except Exception as e:
         st.error(f"Error loading model {model_path}: {str(e)}")
         return None
