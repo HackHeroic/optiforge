@@ -182,50 +182,64 @@ MODEL_CONFIG = {
     "MLP C/S (No GARCH)": {
         "path": "mlp_cs_without_garch.h5",
         "type": "mlp",
-        "output": "log_cs",  # Models WITHOUT GARCH output log(C/S)
+        "output": "cs",  # Models trained on C/S output C/S directly
         "garch": False
     },
     "MLP C/S (With GARCH)": {
         "path": "mlp_cs_with_garch.h5",
         "type": "mlp",
-        "output": "cs",  # Models WITH GARCH output C/S
+        "output": "cs",  # Models trained on C/S output C/S directly
         "garch": True
     },
     "MLP log(C/S) (No GARCH)": {
         "path": "mlp_log_cs_without_garch.h5",
         "type": "mlp",
-        "output": "log_cs",  # Models WITHOUT GARCH output log(C/S)
+        "output": "log_cs",  # Models trained on log(C/S) output log(C/S)
         "garch": False
     },
     "MLP log(C/S) (With GARCH)": {
         "path": "mlp_log_cs_with_garch.h5",
         "type": "mlp",
-        "output": "cs",  # Models WITH GARCH output C/S
+        "output": "log_cs",  # Models trained on log(C/S) output log(C/S)
         "garch": True
     },
     "LSTM C/S (No GARCH)": {
         "path": "lstm_cs_without_garch.h5",
         "type": "lstm",
-        "output": "log_cs",  # Models WITHOUT GARCH output log(C/S)
+        "output": "cs",  # Models trained on C/S output C/S directly
         "garch": False
     },
     "LSTM C/S (With GARCH)": {
         "path": "lstm_cs_with_garch.h5",
         "type": "lstm",
-        "output": "cs",  # Models WITH GARCH output C/S
+        "output": "cs",  # Models trained on C/S output C/S directly
         "garch": True
     },
     "LSTM log(C/S) (No GARCH)": {
         "path": "lstm_log_cs_without_garch.h5",
         "type": "lstm",
-        "output": "log_cs",  # Models WITHOUT GARCH output log(C/S)
+        "output": "log_cs",  # Models trained on log(C/S) output log(C/S)
         "garch": False
     },
     "LSTM log(C/S) (With GARCH)": {
         "path": "lstm_log_cs_with_garch.h5",
         "type": "lstm",
-        "output": "cs",  # Models WITH GARCH output C/S
+        "output": "log_cs",  # Models trained on log(C/S) output log(C/S)
         "garch": True
+    }
+}
+
+# StandardScaler parameters calculated from training data (combine.csv)
+# These are used to scale features before prediction
+# Calculated from actual training data statistics
+SCALING_PARAMS = {
+    "no_garch": {
+        "mean": [0.003884, 1.039972, 0.060667, 0.051600],  # [IV, K/S, Maturity, r]
+        "std": [0.005542, 0.314280, 0.033587, 1.0]  # r has std=0, use 1.0 to avoid division by zero
+    },
+    "with_garch": {
+        "mean": [0.003884, 1.039972, 0.060667, 0.051600, 0.003884],  # [IV, K/S, Maturity, r, cond_vol]
+        "std": [0.005542, 0.314280, 0.033587, 1.0, 0.005542]  # r has std=0, use 1.0 to avoid division by zero
     }
 }
 
@@ -244,14 +258,33 @@ def load_model_cached(model_path):
         return None
 
 
+def scale_features(features, use_garch=False):
+    """
+    Scale features using StandardScaler parameters from training data.
+    StandardScaler formula: (x - mean) / std
+    """
+    if use_garch:
+        params = SCALING_PARAMS["with_garch"]
+    else:
+        params = SCALING_PARAMS["no_garch"]
+    
+    mean = np.array(params["mean"])
+    std = np.array(params["std"])
+    
+    # Avoid division by zero for r (which has std=0 in training data)
+    std = np.where(std == 0, 1.0, std)
+    
+    scaled = (features - mean) / std
+    return scaled
+
+
 def prepare_features(S, K, T, r, sigma, use_garch=False):
     """
-    Prepare input features for the models.
+    Prepare and scale input features for the models.
     Models expect: [IV, K/S, Maturity, r] or [IV, K/S, Maturity, r, cond_vol]
     Dashboard provides: S, K, T, r, sigma
     
-    Note: Models were trained with StandardScaler, but scalers are not saved.
-    Feature ranges should be similar to training data for best results.
+    Features are scaled using StandardScaler parameters from training data.
     """
     # Map dashboard inputs to model features
     IV = sigma  # Implied volatility (maps to sigma from dashboard)
@@ -264,9 +297,13 @@ def prepare_features(S, K, T, r, sigma, use_garch=False):
         # In practice, this would be calculated from historical data using GARCH(1,1)
         # Using a simple approximation: cond_vol ≈ sigma * adjustment factor
         cond_vol = sigma * 1.1  # Simple approximation
-        return np.array([[IV, K_S, Maturity, r_feat, cond_vol]])
+        features = np.array([[IV, K_S, Maturity, r_feat, cond_vol]])
     else:
-        return np.array([[IV, K_S, Maturity, r_feat]])
+        features = np.array([[IV, K_S, Maturity, r_feat]])
+    
+    # Scale features using StandardScaler parameters
+    features_scaled = scale_features(features, use_garch=use_garch)
+    return features_scaled
 
 
 def predict_with_model(model, features, model_type, output_type):

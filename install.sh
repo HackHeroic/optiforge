@@ -19,6 +19,6 @@ python -m pip install \
   "keras==2.15.*" \
   "numpy==1.26.4" \
   "ml-dtypes<0.5" \
-  pandas scikit-learn scipy matplotlib
+  pandas scikit-learn scipy matplotlib streamlit
 
 echo "Installation complete! Environment 'optiforge' is ready."
