@@ -9,17 +9,139 @@ import matplotlib.pyplot as plt
 import os
 from tensorflow.keras.models import load_model
 
-st.set_page_config(page_title="Option Pricing Dashboard", layout="wide")
+st.set_page_config(page_title="Option Pricing Dashboard", layout="wide", initial_sidebar_state="expanded")
 
 # ------------------------------------------------------
 # REMOVE STREAMLIT DEFAULT TOP WHITE NAVBAR
 # ------------------------------------------------------
 st.markdown("""
 <style>
+/* Hide header content but keep sidebar toggle button visible */
 header[data-testid="stHeader"] {
-    display: none !important;
+    background: transparent !important;
+    height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+}
+
+/* But ensure the sidebar toggle button is visible and positioned */
+header[data-testid="stHeader"] button[data-testid="baseButton-header"],
+button[data-testid="baseButton-header"] {
+    visibility: visible !important;
+    display: flex !important;
+    position: fixed !important;
+    top: 1rem !important;
+    left: 1rem !important;
+    z-index: 10000 !important;
+    background-color: #1f1f1f !important;
+    border: 2px solid #818cf8 !important;
+    border-radius: 8px !important;
+    padding: 10px 12px !important;
+    cursor: pointer !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s ease !important;
+}
+
+button[data-testid="baseButton-header"]:hover {
+    background-color: #2f2f2f !important;
+    box-shadow: 0 4px 12px rgba(129, 140, 248, 0.4) !important;
+    transform: translateY(-1px) !important;
+}
+
+button[data-testid="baseButton-header"]:active {
+    transform: translateY(0) !important;
+}
+
+button[data-testid="baseButton-header"] svg {
+    color: #818cf8 !important;
+    width: 24px !important;
+    height: 24px !important;
+    stroke-width: 2.5 !important;
+}
+
+/* Ensure sidebar is visible by default */
+[data-testid="stSidebar"] {
+    visibility: visible !important;
+}
+
+[data-testid="stSidebar"][aria-expanded="true"] {
+    visibility: visible !important;
+    display: block !important;
+}
+
+/* Ensure toggle button is visible even when sidebar is collapsed */
+[data-testid="stSidebar"][aria-expanded="false"] ~ * button[data-testid="baseButton-header"],
+.stApp button[data-testid="baseButton-header"],
+button[data-testid="baseButton-header"] {
+    visibility: visible !important;
+    display: flex !important;
+    opacity: 1 !important;
+    position: fixed !important;
+    top: 1rem !important;
+    left: 1rem !important;
+    z-index: 10000 !important;
 }
 </style>
+
+<script>
+// Ensure sidebar toggle button is always visible
+(function() {
+    function ensureToggleVisible() {
+        // Try multiple selectors to find the toggle button
+        const selectors = [
+            'button[data-testid="baseButton-header"]',
+            'header button[data-testid="baseButton-header"]',
+            '[data-testid="baseButton-header"]'
+        ];
+        
+        let toggleBtn = null;
+        for (const selector of selectors) {
+            toggleBtn = document.querySelector(selector);
+            if (toggleBtn) break;
+        }
+        
+        if (toggleBtn) {
+            toggleBtn.style.visibility = 'visible';
+            toggleBtn.style.display = 'flex';
+            toggleBtn.style.opacity = '1';
+            toggleBtn.style.position = 'fixed';
+            toggleBtn.style.top = '1rem';
+            toggleBtn.style.left = '1rem';
+            toggleBtn.style.zIndex = '10000';
+        }
+    }
+    
+    // Run immediately
+    ensureToggleVisible();
+    
+    // Run on DOM ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', ensureToggleVisible);
+    }
+    
+    // Run after delays
+    setTimeout(ensureToggleVisible, 100);
+    setTimeout(ensureToggleVisible, 500);
+    setTimeout(ensureToggleVisible, 1000);
+    setTimeout(ensureToggleVisible, 2000);
+    
+    // Watch for sidebar state changes
+    const observer = new MutationObserver(function(mutations) {
+        ensureToggleVisible();
+    });
+    
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['aria-expanded', 'style', 'class']
+    });
+})();
+</script>
 """, unsafe_allow_html=True)
 
 
@@ -88,6 +210,55 @@ st.markdown(
         background-color: #ffffff !important;
         border-right: 1px solid #e5e7eb;
         color: #111827 !important;
+        visibility: visible !important;
+    }
+    
+    /* Ensure sidebar is visible when expanded */
+    [data-testid="stSidebar"][aria-expanded="true"] {
+        visibility: visible !important;
+        display: block !important;
+    }
+
+    /* Ensure all sidebar text is dark in light mode */
+    [data-testid="stSidebar"] h1,
+    [data-testid="stSidebar"] h2,
+    [data-testid="stSidebar"] h3,
+    [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] span,
+    [data-testid="stSidebar"] div {
+        color: #1f2937 !important;
+    }
+
+    /* Ensure main content text is dark in light mode */
+    .stMarkdown p,
+    .stMarkdown strong,
+    .stMarkdown b,
+    .stMarkdown h1,
+    .stMarkdown h2,
+    .stMarkdown h3,
+    .stMarkdown h4,
+    .stMarkdown h5,
+    .stMarkdown h6 {
+        color: #1f2937 !important;
+    }
+
+    /* LOGO AND TITLE CONTAINER */
+    .logo-title-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 15px;
+        margin-top: -80px;
+        margin-bottom: 10px;
+    }
+
+    .logo {
+        font-size: 2.5rem;
+        font-weight: 900;
+        background: linear-gradient(90deg, #6366F1, #8B5CF6, #EC4899);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
     }
 
     /* TITLE + SUBTITLE */
@@ -95,7 +266,7 @@ st.markdown(
         font-size: 3rem !important;
         font-weight: 900 !important;
         text-align: center;
-        margin-top: -30px;
+        margin-top: 0px;
         padding-bottom: 10px;
         background: linear-gradient(90deg, #6366F1, #8B5CF6, #EC4899);
         -webkit-background-clip: text;
@@ -105,7 +276,7 @@ st.markdown(
     .subtitle {
         text-align: center;
         font-size: 1.1rem;
-        color: #6b7280;
+        color: #6b7280 !important;
         margin-bottom: 40px;
     }
 
@@ -147,6 +318,11 @@ st.markdown(
         font-size: 1.1rem;
         margin-top: 15px;
         box-shadow: 0px 3px 12px rgba(0,0,0,0.07);
+        color: #1f2937 !important;
+    }
+
+    .comparison-box b {
+        color: #1f2937 !important;
     }
 
     .section-title {
@@ -162,6 +338,58 @@ st.markdown(
         text-align: center;
         color: #6b7280;
         font-size: 0.9rem;
+    }
+
+    /* Selectbox styling for light mode */
+    [data-testid="stSidebar"] .stSelectbox > div > div {
+        background-color: #ffffff !important;
+        color: #1f2937 !important;
+    }
+
+    [data-testid="stSidebar"] .stSelectbox label {
+        color: #1f2937 !important;
+    }
+
+    [data-testid="stSidebar"] .stSelectbox [data-baseweb="select"] {
+        background-color: #ffffff !important;
+        color: #1f2937 !important;
+    }
+
+    [data-testid="stSidebar"] .stSelectbox [data-baseweb="select"] > div {
+        color: #1f2937 !important;
+    }
+
+    [data-testid="stSidebar"] .stSelectbox [data-baseweb="popover"] {
+        background-color: #ffffff !important;
+    }
+
+    [data-testid="stSidebar"] .stSelectbox [data-baseweb="popover"] li {
+        background-color: #ffffff !important;
+        color: #1f2937 !important;
+    }
+
+    [data-testid="stSidebar"] .stSelectbox [data-baseweb="popover"] li:hover {
+        background-color: #f3f4f6 !important;
+    }
+
+    /* Ensure dropdown arrow is visible in light mode */
+    [data-testid="stSidebar"] .stSelectbox [data-baseweb="select"] svg {
+        color: #1f2937 !important;
+    }
+
+    /* Light mode sidebar toggle button */
+    button[data-testid="baseButton-header"] {
+        background-color: #ffffff !important;
+        border: 2px solid #6366F1 !important;
+    }
+
+    button[data-testid="baseButton-header"]:hover {
+        background-color: #f8fafc !important;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3) !important;
+    }
+
+    button[data-testid="baseButton-header"] svg {
+        color: #6366F1 !important;
     }
 
 </style>
@@ -409,21 +637,28 @@ def black_scholes_call(S, K, T, r, sigma):
 # -----------------------------
 # 5. SIDEBAR INPUTS
 # -----------------------------
-st.sidebar.header("Input Parameters")
-
-S = st.sidebar.slider("Spot Price (S)", 10.0, 500.0, 100.0)
-K = st.sidebar.slider("Strike Price (K)", 10.0, 500.0, 120.0)
-T = st.sidebar.slider("Time to Maturity (years)", 0.01, 2.0, 1.0)
-r = st.sidebar.slider("Risk-Free Interest Rate (r)", 0.00, 0.20, 0.05)
-sigma = st.sidebar.slider("Volatility (σ)", 0.01, 1.00, 0.20)
-
-model_choice = st.sidebar.selectbox(
-    "Select Model", 
-    list(MODEL_CONFIG.keys()),
-    index=0
-)
-
-dark_mode = st.sidebar.checkbox("🌙 Dark Mode")
+with st.sidebar:
+    st.header("Input Parameters")
+    
+    S = st.slider("Spot Price (S)", 10.0, 500.0, 100.0)
+    K = st.slider("Strike Price (K)", 10.0, 500.0, 120.0)
+    T = st.slider("Time to Maturity (years)", 0.01, 2.4, 1.0)
+    r = st.slider("Risk-Free Interest Rate (r)", 0.00, 0.20, 0.05)
+    sigma = st.slider("Volatility (σ)", 0.01, 1.00, 0.20)
+    
+    # Find index of "LSTM C/S (With GARCH)" for default selection
+    model_list = list(MODEL_CONFIG.keys())
+    default_model = "LSTM C/S (With GARCH)"
+    default_index = model_list.index(default_model) if default_model in model_list else 0
+    
+    model_choice = st.selectbox(
+        "Select Model", 
+        model_list,
+        index=default_index
+    )
+    
+    # Dark mode toggle checkbox
+    dark_mode = st.checkbox("🌙 Dark Mode", value=True)
 
 # NOW APPLY NAVBAR BASED ON DARK MODE
 render_navbar(dark=dark_mode)
@@ -431,8 +666,14 @@ render_navbar(dark=dark_mode)
 # -----------------------------
 # 4. HEADER (RESTORED TITLE + SUBTITLE)
 # -----------------------------
+# Logo and Title Container
 st.markdown(
-    "<h1 class='title'>OptiForge Neural Pricing Dashboard</h1>",
+    """
+    <div class="logo-title-container">
+        <div class="logo">⚡</div>
+        <h1 class='title'>OptiForge Neural Pricing Dashboard</h1>
+    </div>
+    """,
     unsafe_allow_html=True,
 )
 st.markdown(
@@ -441,7 +682,30 @@ st.markdown(
 )
 
 # -----------------------------
-# 5b. Extra Dark-mode CSS
+# 5b. Format model name for display
+# -----------------------------
+def format_model_name(model_key):
+    """Convert model key to human-readable professional format"""
+    # Extract components
+    model_type = "MLP" if "MLP" in model_key else "LSTM"
+    has_garch = "With GARCH" in model_key
+    
+    # Extract output type - handle both "C/S" and "log(C/S)"
+    if "log(C/S)" in model_key or "log" in model_key:
+        output_display = "Log Call-to-Stock Ratio"
+    elif "C/S" in model_key:
+        output_display = "Call-to-Stock Ratio"
+    else:
+        output_display = "Option Pricing"
+    
+    # Build professional name
+    if has_garch:
+        return f"{model_type} Neural Network ({output_display}) with GARCH Volatility"
+    else:
+        return f"{model_type} Neural Network ({output_display})"
+    
+# -----------------------------
+# 5c. Extra Dark-mode CSS (always applied)
 # -----------------------------
 if dark_mode:
     st.markdown(
@@ -460,12 +724,65 @@ if dark_mode:
         background-color: #0c0c0d !important;
         border-right: 1px solid #1f1f1f !important;
         color: #ffffff !important;
+        visibility: visible !important;
+    }
+    
+    /* Ensure sidebar is visible when expanded in dark mode */
+    [data-testid="stSidebar"][aria-expanded="true"] {
+        visibility: visible !important;
+        display: block !important;
+    }
+    
+    /* Ensure sidebar toggle button is visible even when header is hidden */
+    button[data-testid="baseButton-header"] {
+        visibility: visible !important;
+        display: flex !important;
+        position: fixed !important;
+        top: 1rem !important;
+        left: 1rem !important;
+        z-index: 10000 !important;
+        background-color: #1f1f1f !important;
+        border: 2px solid #818cf8 !important;
+        border-radius: 8px !important;
+        padding: 10px 12px !important;
+        cursor: pointer !important;
+        min-width: 48px !important;
+        min-height: 48px !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    
+    button[data-testid="baseButton-header"]:hover {
+        background-color: #2f2f2f !important;
+        box-shadow: 0 4px 12px rgba(129, 140, 248, 0.4) !important;
+    }
+    
+    button[data-testid="baseButton-header"] svg {
+        color: #818cf8 !important;
+        width: 24px !important;
+        height: 24px !important;
     }
 
     [data-testid="stSidebar"] label,
     [data-testid="stSidebar"] .css-17eq0hr,
     [data-testid="stSidebar"] .css-q8sbsg,
-    [data-testid="stSidebar"] .css-1p4l8gs {
+    [data-testid="stSidebar"] .css-1p4l8gs,
+    [data-testid="stSidebar"] h1,
+    [data-testid="stSidebar"] h2,
+    [data-testid="stSidebar"] h3,
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] span,
+    [data-testid="stSidebar"] div {
+        color: #e5e7eb !important;
+    }
+
+    /* Selectbox styling for dark mode */
+    [data-testid="stSidebar"] .stSelectbox > div > div {
+        background-color: #1f1f1f !important;
+        color: #ffffff !important;
+    }
+
+    [data-testid="stSidebar"] .stSelectbox label {
         color: #e5e7eb !important;
     }
 
@@ -488,9 +805,114 @@ if dark_mode:
     .subtitle,
     .footer,
     h2, h3, h4, h5, h6,
+    .stMarkdown h2,
+    .stMarkdown h3,
+    .stMarkdown h4,
+    .stMarkdown h5,
+    .stMarkdown h6,
     .stMarkdown p,
     .stMarkdown strong {
         color: #ffffff !important;
+    }
+
+    .comparison-box {
+        color: #ffffff !important;
+    }
+
+    .comparison-box b {
+        color: #ffffff !important;
+    }
+
+    .logo-title-container .logo {
+        background: linear-gradient(90deg, #818cf8, #a78bfa, #f472b6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    /* Selectbox styling for dark mode */
+    [data-testid="stSidebar"] .stSelectbox > div > div {
+        background-color: #1f1f1f !important;
+        color: #ffffff !important;
+        border-color: #3f3f3f !important;
+    }
+
+    [data-testid="stSidebar"] .stSelectbox label {
+        color: #e5e7eb !important;
+    }
+
+    [data-testid="stSidebar"] .stSelectbox [data-baseweb="select"] {
+        background-color: #1f1f1f !important;
+        color: #ffffff !important;
+    }
+
+    [data-testid="stSidebar"] .stSelectbox [data-baseweb="select"] > div {
+        color: #ffffff !important;
+    }
+
+    /* Dropdown arrow visible in dark mode */
+    [data-testid="stSidebar"] .stSelectbox [data-baseweb="select"] svg {
+        color: #ffffff !important;
+    }
+
+    [data-testid="stSidebar"] .stSelectbox [data-baseweb="popover"] {
+        background-color: #1f1f1f !important;
+    }
+
+    [data-testid="stSidebar"] .stSelectbox [data-baseweb="popover"] li {
+        background-color: #1f1f1f !important;
+        color: #ffffff !important;
+    }
+
+    [data-testid="stSidebar"] .stSelectbox [data-baseweb="popover"] li:hover {
+        background-color: #3f3f3f !important;
+    }
+
+    /* Dark mode sidebar toggle button */
+    button[kind="header"][data-testid="baseButton-header"],
+    button[data-testid="baseButton-header"][kind="header"] {
+        background-color: #1f1f1f !important;
+        border-color: #818cf8 !important;
+        visibility: visible !important;
+        display: flex !important;
+        opacity: 1 !important;
+        z-index: 10000 !important;
+        pointer-events: auto !important;
+    }
+
+    button[kind="header"][data-testid="baseButton-header"]:hover,
+    button[data-testid="baseButton-header"][kind="header"]:hover {
+        background-color: #2f2f2f !important;
+        box-shadow: 0 4px 12px rgba(129, 140, 248, 0.4) !important;
+    }
+
+    button[kind="header"][data-testid="baseButton-header"] svg,
+    button[data-testid="baseButton-header"][kind="header"] svg {
+        color: #818cf8 !important;
+    }
+    
+    /* Ensure sidebar toggle is visible even when sidebar is collapsed in dark mode */
+    [data-testid="stSidebar"][aria-expanded="false"] ~ * button[data-testid="baseButton-header"],
+    section[data-testid="stSidebar"][aria-expanded="false"] ~ div button[data-testid="baseButton-header"],
+    .stApp button[data-testid="baseButton-header"] {
+        visibility: visible !important;
+        display: flex !important;
+        opacity: 1 !important;
+        position: fixed !important;
+        top: 1rem !important;
+        left: 1rem !important;
+        z-index: 10000 !important;
+    }
+    
+    /* Custom toggle button styling in dark mode */
+    #custom-sidebar-toggle {
+        background-color: #1f1f1f !important;
+        border-color: #818cf8 !important;
+        color: #818cf8 !important;
+    }
+    
+    #custom-sidebar-toggle:hover {
+        background-color: #2f2f2f !important;
+        box-shadow: 0 4px 12px rgba(129, 140, 248, 0.4) !important;
     }
 
     </style>
@@ -502,6 +924,9 @@ if dark_mode:
 # -----------------------------
 # 6. TOP METRICS
 # -----------------------------
+# Format model name once for reuse
+formatted_model_name = format_model_name(model_choice)
+
 bs_price = black_scholes_call(S, K, T, r, sigma)
 model_price = get_model_call_price(model_choice, S, K, T, r, sigma)
 
@@ -605,63 +1030,8 @@ def get_heatmap_data(model_choice, S, K, T, r, sigma):
 # -----------------------------
 st.markdown("<div class='section-title'>Visualizations</div>", unsafe_allow_html=True)
 
-# PRICE VS SPOT
-st.markdown("#### 1. Price vs Spot Price (S)")
-col_m1, col_bs1 = st.columns(2)
-
-S_vals, bs_S, model_S = get_price_vs_spot_data(model_choice, S, K, T, r, sigma)
-
-with col_m1:
-    st.markdown("**Selected Model**")
-    fig, ax = plt.subplots(figsize=(5, 3), dpi=120)
-    ax.plot(S_vals, model_S, linewidth=2)
-    ax.set_xlabel("Spot Price (S)")
-    ax.set_ylabel("Call Price")
-    ax.grid(True, alpha=0.3)
-    plt.tight_layout()
-    st.pyplot(fig)
-
-with col_bs1:
-    st.markdown("**Black-Scholes**")
-    fig, ax = plt.subplots(figsize=(5, 3), dpi=120)
-    ax.plot(S_vals, bs_S, linewidth=2)
-    ax.set_xlabel("Spot Price (S)")
-    ax.set_ylabel("Call Price")
-    ax.grid(True, alpha=0.3)
-    plt.tight_layout()
-    st.pyplot(fig)
-
-
-# PRICE VS VOL
-st.markdown("#### 2. Price vs Volatility (σ)")
-col_m2, col_bs2 = st.columns(2)
-
-sigmas, bs_sig, model_sig = get_price_vs_vol_data(model_choice, S, K, T, r, sigma)
-
-
-with col_m2:
-    st.markdown("**Selected Model**")
-    fig, ax = plt.subplots(figsize=(5, 3), dpi=120)
-    ax.plot(sigmas, model_sig, linewidth=2)
-    ax.set_xlabel("Volatility (σ)")
-    ax.set_ylabel("Call Price")
-    ax.grid(True, alpha=0.3)
-    plt.tight_layout()
-    st.pyplot(fig)
-
-with col_bs2:
-    st.markdown("**Black-Scholes**")
-    fig, ax = plt.subplots(figsize=(5, 3), dpi=120)
-    ax.plot(sigmas, bs_sig, linewidth=2)
-    ax.set_xlabel("Volatility (σ)")
-    ax.set_ylabel("Call Price")
-    ax.grid(True, alpha=0.3)
-    plt.tight_layout()
-    st.pyplot(fig)
-
-
-# HEATMAP
-st.markdown("#### 3. Call Price Heatmap C(S, σ)")
+# HEATMAP (moved to first position)
+st.markdown("#### 1. Call Price Heatmap C(S, σ)")
 col_m3, col_bs3 = st.columns(2)
 
 S_grid, sig_grid, bs_grid, model_grid = get_heatmap_data(model_choice, S, K, T, r, sigma)
@@ -688,12 +1058,66 @@ def draw_heatmap(grid, title):
 
 
 with col_m3:
-    st.markdown("**Selected Model**")
-    st.pyplot(draw_heatmap(model_grid, f"{model_choice} Heatmap"))
+    st.markdown(f"**{formatted_model_name}**")
+    st.pyplot(draw_heatmap(model_grid, f"{formatted_model_name} Heatmap"))
 
 with col_bs3:
     st.markdown("**Black-Scholes**")
     st.pyplot(draw_heatmap(bs_grid, "Black-Scholes Heatmap"))
+
+# PRICE VS SPOT (moved to second position)
+st.markdown("#### 2. Price vs Spot Price (S)")
+col_m1, col_bs1 = st.columns(2)
+
+S_vals, bs_S, model_S = get_price_vs_spot_data(model_choice, S, K, T, r, sigma)
+
+with col_m1:
+    st.markdown(f"**{formatted_model_name}**")
+    fig, ax = plt.subplots(figsize=(5, 3), dpi=120)
+    ax.plot(S_vals, model_S, linewidth=2)
+    ax.set_xlabel("Spot Price (S)")
+    ax.set_ylabel("Call Price")
+    ax.grid(True, alpha=0.3)
+    plt.tight_layout()
+    st.pyplot(fig)
+
+with col_bs1:
+    st.markdown("**Black-Scholes**")
+    fig, ax = plt.subplots(figsize=(5, 3), dpi=120)
+    ax.plot(S_vals, bs_S, linewidth=2)
+    ax.set_xlabel("Spot Price (S)")
+    ax.set_ylabel("Call Price")
+    ax.grid(True, alpha=0.3)
+    plt.tight_layout()
+    st.pyplot(fig)
+
+
+# PRICE VS VOL (moved to third position)
+st.markdown("#### 3. Price vs Volatility (σ)")
+col_m2, col_bs2 = st.columns(2)
+
+sigmas, bs_sig, model_sig = get_price_vs_vol_data(model_choice, S, K, T, r, sigma)
+
+
+with col_m2:
+    st.markdown(f"**{formatted_model_name}**")
+    fig, ax = plt.subplots(figsize=(5, 3), dpi=120)
+    ax.plot(sigmas, model_sig, linewidth=2)
+    ax.set_xlabel("Volatility (σ)")
+    ax.set_ylabel("Call Price")
+    ax.grid(True, alpha=0.3)
+    plt.tight_layout()
+    st.pyplot(fig)
+
+with col_bs2:
+    st.markdown("**Black-Scholes**")
+    fig, ax = plt.subplots(figsize=(5, 3), dpi=120)
+    ax.plot(sigmas, bs_sig, linewidth=2)
+    ax.set_xlabel("Volatility (σ)")
+    ax.set_ylabel("Call Price")
+    ax.grid(True, alpha=0.3)
+    plt.tight_layout()
+    st.pyplot(fig)
 
 
 # FOOTER
