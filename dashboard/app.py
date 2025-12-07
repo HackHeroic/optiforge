@@ -151,6 +151,7 @@ button[data-testid="baseButton-header"] {
 def render_navbar(dark=False):
     bg = "#0f0f11" if dark else "#ffffff"
     text = "#ffffff" if dark else "#1f2937"
+    border_color = "rgba(255,255,255,0.1)" if dark else "rgba(0,0,0,0.2)"
 
     st.markdown(f"""
     <style>
@@ -162,7 +163,7 @@ def render_navbar(dark=False):
             align-items: center;
             justify-content: flex-end;
             padding: 0 30px;
-            border-bottom: 1px solid rgba(0,0,0,0.2);
+            border-bottom: 1px solid {border_color};
             position: fixed;
             top: 0;
             left: 0;
@@ -174,6 +175,16 @@ def render_navbar(dark=False):
             font-weight: 600;
             color: {text};
             text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            margin-left: 10px;
+        }}
+
+        .nav-link:hover {{
+            background-color: rgba(99, 102, 241, 0.1);
+            color: #6366F1;
+            text-decoration: underline;
         }}
 
         .nav-spacer {{
@@ -182,7 +193,7 @@ def render_navbar(dark=False):
     </style>
 
     <div class="custom-nav">
-        <a class="nav-link" href="https://github.com" target="_blank">GitHub</a>
+        <a class="nav-link" href="https://github.com/HackHeroic/optiforge" target="_blank">GitHub</a>
     </div>
 
     <div class="nav-spacer"></div>
