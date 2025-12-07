@@ -1,6 +1,5 @@
 # OptiForge: Hybrid ML-Enhanced Black-Scholes Option Pricing  
 **C Murali Madhav (230115) • Ravi Yadav (230131) • Abhijeet (230036)**  
-Newton School of Technology | AI/ML Course Project | 2025  
 
 [![Python](https://img.shields.io/badge/Python-3.11-blue)](https://www.python.org/)
 [![TensorFlow](https://img.shields.io/badge/TensorFlow-2.15-orange)](https://www.tensorflow.org/)
@@ -79,6 +78,8 @@ optiforge/
 ├── scaler_y.pkl                                  # Target scaler (saved)
 ├── install.sh                                    # Environment setup script
 ├── y_test_y_pred.csv                             # Sample predictions
+├── dashboard/                                    # Interactive Streamlit dashboard
+│   └── app.py                                   # Main dashboard application
 └── README.md
 ```
 
@@ -105,6 +106,27 @@ jupyter notebook
 2. `OptionPricingSimulationUsingANN(MLP).ipynb` - Phase 1: Synthetic data
 3. `OptionsPricingRealData.ipynb` - Phase 2: Data processing & EDA
 4. `OptionsPricingRealData3.ipynb` - Phase 2: Model training (all 8 models)
+
+### Running the Interactive Dashboard
+
+```bash
+# Navigate to dashboard directory
+cd dashboard
+
+# Run Streamlit app
+streamlit run app.py
+```
+
+The dashboard will open in your browser at `http://localhost:8501` with:
+- **Interactive parameter controls** for Spot Price, Strike Price, Time to Maturity, Risk-Free Rate, and Volatility
+- **Model selection** from 8 trained models (MLP/LSTM with/without GARCH, C/S and log(C/S) targets)
+- **Real-time predictions** comparing neural network models vs. Black-Scholes
+- **Interactive visualizations**:
+  - Call Price Heatmap C(S, σ) comparing model predictions vs. Black-Scholes
+  - Price vs Spot Price (S) line charts
+  - Price vs Volatility (σ) line charts
+- **Dark/Light mode** toggle for comfortable viewing
+- **Professional model name display** with human-readable formatting
 
 ---
 
@@ -238,11 +260,40 @@ The GBM simulation code and detailed mathematical derivation are also included h
 
 ---
 
+## 🎨 Interactive Dashboard
+
+OptiForge includes a comprehensive Streamlit-based interactive dashboard (`dashboard/app.py`) that provides real-time option pricing comparisons between neural network models and the Black-Scholes formula.
+
+### Features
+
+- **Interactive Parameter Controls**: Adjust Spot Price (S), Strike Price (K), Time to Maturity (T), Risk-Free Interest Rate (r), and Volatility (σ) using intuitive sliders
+- **Model Selection**: Choose from 8 pre-trained models:
+  - MLP Neural Network (Call-to-Stock Ratio) with/without GARCH Volatility
+  - MLP Neural Network (Log Call-to-Stock Ratio) with/without GARCH Volatility
+  - LSTM Neural Network (Call-to-Stock Ratio) with/without GARCH Volatility
+  - LSTM Neural Network (Log Call-to-Stock Ratio) with/without GARCH Volatility
+- **Real-Time Predictions**: Instant comparison between selected model predictions and Black-Scholes prices
+- **Comprehensive Visualizations**:
+  - **Call Price Heatmap C(S, σ)**: 2D heatmaps showing how option prices vary with Spot Price and Volatility
+  - **Price vs Spot Price (S)**: Line charts comparing model predictions and Black-Scholes across different spot prices
+  - **Price vs Volatility (σ)**: Line charts showing sensitivity to volatility changes
+- **Dark/Light Mode**: Toggle between dark and light themes for comfortable viewing
+- **Error Metrics**: Display absolute error and percentage error between model predictions and Black-Scholes
+
+### Dashboard Architecture
+
+The dashboard uses:
+- **Streamlit** for the web interface
+- **TensorFlow/Keras** for loading and running pre-trained models
+- **Matplotlib** for generating visualizations
+- **NumPy** and **SciPy** for Black-Scholes calculations and data processing
+
+All models are loaded from the `models/` directory and predictions are made in real-time based on user inputs.
+
+---
+
 ## 📝 Future Work
 
-- [ ] Interactive dashboard with heatmaps comparing NN predictions vs. Black-Scholes
-- [ ] GRU architecture implementation and comparison
-- [ ] Extended evaluation on SPY options data
 - [ ] Real-time option pricing API
 - [ ] Ensemble methods combining MLP and LSTM predictions
 - [ ] Advanced volatility models (EGARCH, GJR-GARCH)
@@ -269,8 +320,8 @@ The GBM simulation code and detailed mathematical derivation are also included h
 
 ## 📄 License
 
-This project is part of the AI/ML Course at Newton School of Technology (2025).
+This project is open source and available under the MIT License.
 
 ---
 
-**Last Updated**: January 2025
+**Last Updated**: December 2025
